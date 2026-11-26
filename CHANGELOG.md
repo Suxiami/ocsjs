@@ -1,5 +1,26 @@
 # Changelog
 
+## [5.6.6](https://github.com/ocsjs/ocsjs/compare/5.6.5...5.6.6) (2026-11-25)
+
+
+### ⚡ 优化改进
+
+* 更新题库配置教程样式 ([038ff9f](https://github.com/ocsjs/ocsjs/commit/038ff9f3e1b20ef12dbe812f17660c7cd86b564f))
+
+## [5.6.5](https://github.com/ocsjs/ocsjs/compare/5.6.4...5.6.5) (2026-11-25)
+
+
+### ⚡ 优化改进
+
+* 将高倍速警告阈值设置为1，优化闯关模式警告和自动设置功能 ([856dc7f](https://github.com/ocsjs/ocsjs/commit/856dc7f92fe8ef612bf2c9fad24df61fb17285d3))
+
+## [5.6.4](https://github.com/ocsjs/ocsjs/compare/5.6.3...5.6.4) (2026-11-25)
+
+
+### ⚡ 优化改进
+
+* 优化超星闯关模式提示、以及智能模式下闯关模式无法切换的BUG ([65b7491](https://github.com/ocsjs/ocsjs/commit/65b74911b1b5036334a3455cf83096c37827b887))
+
 ## [5.6.3](https://github.com/ocsjs/ocsjs/compare/5.6.2...5.6.3) (2026-11-24)
 
 
