@@ -20,7 +20,7 @@ import semver_gt from 'semver/functions/gt';
 import semver_valid from 'semver/functions/valid';
 import md5 from 'md5';
 import { CommonProject } from './common';
-import { CXProject, definedProjects, ICourseProject, IcveMoocProject, YKTProject, ZHSProject, ZJYProject } from '..';
+import { CXProject, definedProjects, ICourseProject, IcveMoocProject, ZHSProject, ZJYProject } from '..';
 import { RenderScript } from '../render';
 import { SearchInfosElement } from '../elements/search.infos';
 import { $render } from '../utils/render';
@@ -508,7 +508,17 @@ export const BackgroundProject = Project.create({
 					}
 				}
 			},
-
+			methods() {
+				return {
+					isInAppEnvironment: () => {
+						return (
+							this.cfg.sync_status === 'synced' ||
+							this.cfg.sync_status === 'not_open_sync' ||
+							this.cfg.sync_status === 'branch'
+						);
+					}
+				};
+			},
 			onrender({ panel }) {
 				const update = () => {
 					if (this.cfg.closeSync) {
@@ -797,7 +807,10 @@ export const BackgroundProject = Project.create({
 			namespace: 'background.update',
 			configs: {
 				notes: {
-					defaultValue: '脚本自动更新模块，如果有新的版本会自动通知。'
+					defaultValue: $ui.notes([
+						'检测到版本发布后会显示更新提示',
+						['稳定版本不一定是最新版', '通常管理员会在测试完善后才更新稳定版本']
+					]).outerHTML
 				},
 				autoNotify: {
 					defaultValue: true,
@@ -850,28 +863,42 @@ export const BackgroundProject = Project.create({
 				const version = await this.methods.getLastVersion();
 				const infos = $gm.getInfos();
 
+				console.log('versions', {
+					notToday: this.cfg.notToday,
+					ignoreVersions: this.cfg.ignoreVersions,
+					version: version
+				});
+
 				if (!infos) {
 					return;
 				}
 
 				const changeLog = h('button', { className: 'base-style-button-secondary' }, '📄查看更新日志');
 				changeLog.onclick = () => this.methods.showChangelog();
-				const updatePage = this.startConfig?.updatePage || '';
-				panel.body.replaceChildren(
-					h('div', { className: 'card' }, [
-						h('hr'),
-						h('div', ['最新版本：' + version['last-version'] + ' - ', changeLog]),
-						h('hr'),
-						h('div', '当前版本：' + infos.script.version),
-						h('div', '脚本管理器：' + infos.scriptHandler),
-						h('div', ['脚本更新链接：', h('a', { target: '_blank', href: updatePage }, [updatePage || '无'])])
-					])
-				);
-				console.log('versions', {
-					notToday: this.cfg.notToday,
-					ignoreVersions: this.cfg.ignoreVersions,
-					version: version
-				});
+
+				// 软件环境下重启自动更新
+				if (BackgroundProject.scripts.appConfigSync.methods.isInAppEnvironment()) {
+					panel.body.replaceChildren(
+						h('div', { className: 'card' }, [
+							h('hr'),
+							h('div', 'ℹ️ 当前处于桌面版环境，重启浏览器可自动更新至最新版'),
+							h('hr'),
+							changeLog
+						])
+					);
+				} else {
+					const updatePage = this.startConfig?.updatePage || '';
+					panel.body.replaceChildren(
+						h('div', { className: 'card' }, [
+							h('hr'),
+							h('div', '当前版本：' + infos.script.version),
+							h('div', ['更新链接：', h('a', { target: '_blank', href: updatePage }, [updatePage || '无'])]),
+							h('div', '脚本管理器：' + infos.scriptHandler),
+							h('hr'),
+							changeLog
+						])
+					);
+				}
 			},
 			oncomplete() {
 				if (this.cfg.autoNotify && $.isInTopWindow()) {
@@ -1416,45 +1443,10 @@ export const BackgroundProject = Project.create({
 				// 注册快捷菜单
 				await $menu('🏠', { scriptPanelLink: CommonProject.scripts.guide });
 				await $menu('🔎', { scriptPanelLink: CommonProject.scripts.workResults });
-				await $menu('⚙️', { scriptPanelLink: CommonProject.scripts.settings });
 				await $menu('📄', { scriptPanelLink: BackgroundProject.scripts.console });
+				await $menu('⚙️', { scriptPanelLink: CommonProject.scripts.settings });
 
-				const currentStudyScript = [
-					[CXProject.scripts.studyDispatcher, CXProject.scripts.study],
-					CXProject.scripts.work,
-					CXProject.scripts.autoRead,
-					CXProject.scripts.jfk,
-					ZHSProject.scripts['study-center'],
-					ZHSProject.scripts['work-center'],
-					ICourseProject.scripts['study-center'],
-					ICourseProject.scripts.work,
-					[ZJYProject.scripts.dispatcher, ZJYProject.scripts.study],
-					ZJYProject.scripts.work,
-					IcveMoocProject.scripts.study,
-					IcveMoocProject.scripts.work,
-					YKTProject.scripts.ai
-				]
-					.map((m) => {
-						const url = window.location.href;
-
-						const data = {
-							matches: Array.isArray(m) ? m[0].matches : m.matches,
-							target: Array.isArray(m) ? m[1] : m
-						};
-
-						if (
-							data.matches.some((regexp) => {
-								const r = Array.isArray(regexp) ? regexp[1] : regexp;
-								return typeof r === 'string' ? url.includes(r) : r.test(url);
-							})
-						) {
-							return data.target;
-						}
-
-						return undefined;
-					})
-					.find((m) => m !== undefined);
-
+				const currentStudyScript = CommonProject.scripts.settings.methods.getCurrentMainScript();
 				if (currentStudyScript) {
 					// 注册当前学习脚本的快捷菜单
 					await $menu(currentStudyScript.name || '🖥️', { scriptPanelLink: currentStudyScript });
